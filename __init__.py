@@ -47,10 +47,10 @@ class RunCommandError(Exception):
     def __str__(self):
         return "RunCommandError.\ncmd:{}\noutput:{}\nerror:{}\nreturncode:{}".format(self.cmd, self.output, self.error, self.returncode)
 
-def run_command(args, timeout=None, shell=False, env=os.environ.copy()):
+def run_command(args, timeout=None, shell=False, cwd=None, env=os.environ.copy()):
     if shell and not isinstance(args, str):
         args = convert_command_to_shell(args)
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env=env)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, env=env)
 
     (output, error) = ("", "")
 
@@ -67,11 +67,11 @@ def run_command(args, timeout=None, shell=False, env=os.environ.copy()):
 
     return output, error
 
-def run_command_and_log(args, timeout=None, shell=False, env=os.environ.copy()):
+def run_command_and_log(args, timeout=None, shell=False, cwd=None, env=os.environ.copy()):
     start_time = datetime.datetime.utcnow()
     start_time_local = datetime.datetime.now()
     print("[{}] Launching: ".format(start_time_local), args)
-    ret = run_command(args, timeout, shell, env)
+    ret = run_command(args, timeout, shell, cwd, env)
     end_time = datetime.datetime.utcnow()
     p = GetPerfLogger()
     p.add(args, start_time, end_time)
@@ -94,8 +94,8 @@ def read_both(proc):
         print(err.decode("utf-8"), end="")
     return (out, err)
 
-def run_command_interactive(args, shell=False, env=os.environ.copy()):
-    proc = asyncproc.Process(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env=env)
+def run_command_interactive(args, shell=False, cwd=None, env=os.environ.copy()):
+    proc = asyncproc.Process(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, cwd=cwd, env=env)
 
     returncode = 0
     whole_out, whole_err = b"", b""
@@ -118,16 +118,12 @@ def run_command_interactive(args, shell=False, env=os.environ.copy()):
 
     return (whole_out, whole_err)
 
-def run_command_interactive_and_log(args, shell=False, env=os.environ.copy()):
+def run_command_interactive_and_log(args, shell=False, cwd=None, env=os.environ.copy()):
     start_time = datetime.datetime.utcnow()
     start_time_local = datetime.datetime.now()
     print("[{}] Launching: ".format(start_time_local), args)
-    ret = run_command_interactive(args, shell, env)
+    ret = run_command_interactive(args, shell, cwd, env)
     end_time = datetime.datetime.utcnow()
     p = GetPerfLogger()
     p.add(args, start_time, end_time)
     return ret
-
-if __name__ == "__main__":
-  init_elastic()
-  run_command_interactive_and_log(["date"])
